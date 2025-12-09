@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Optical Tweezers Simulation</title>
+
+    <!-- PyScript CSS -->
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+
+        .app-links {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .app-links a {
+            display: inline-block;
+            margin: 0 10px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .app-links a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .instructions {
+            background: #f0f7ff;
+            border-left: 4px solid #667eea;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+
+        .instructions h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+
+        .instructions ul {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+
+        .instructions li {
+            margin: 5px 0;
+        }
+
+        #plot-area {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 Interactive Optical Tweezers Simulation</h1>
+        <p class="subtitle">Real-time Brownian Motion in an Optical Trap</p>
+
+        <div class="app-links">
+            <a href="https://openflexureot-zpt4c4cpnazxh5zikkmg2b.streamlit.app/">🌐 Try Live Web App (Streamlit)</a>
+            <a href="https://github.com/aliazadbakht/OpenFlexureOT">🔗 View on GitHub</a>
+        </div>
+
+        <div class="instructions">
+            <h3>📋 How to Use:</h3>
+            <ul>
+                <li><strong>Click</strong> on the blue particle to grab it</li>
+                <li><strong>Drag</strong> it around the trap area</li>
+                <li><strong>Release inside</strong> the orange circle → particle bounces back to center (trapped!)</li>
+                <li><strong>Release outside</strong> the orange circle → particle ESCAPES!</li>
+                <li><strong>Drag back</strong> an escaped particle to recapture it</li>
+                <li>Watch the <strong>green arrow</strong> show the trap force magnitude and direction</li>
+            </ul>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            Loading simulation... (This may take 10-30 seconds on first load)
+        </div>
+
+        <div id="plot-area"></div>
+
+        <div class="footer">
+            <p>Simulates a 4µm silica bead in a 5mW optical trap at 635nm wavelength</p>
+            <p>Built with PyScript | <a href="https://github.com/aliazadbakht/OpenFlexureOT" target="_blank">View on GitHub</a></p>
+        </div>
+    </div>
+
+    <script type="py" config='{"packages": ["numpy", "matplotlib"]}'>
+import numpy as np
+import matplotlib
+matplotlib.use('module://matplotlib_pyodide.wasm_backend')
+import matplotlib.pyplot as plt
+from matplotlib import animation
+from js import document
+import asyncio
+
+# Physical constants
+k_B = 1.380649e-23  # Boltzmann constant
+
+class OpticalTrapSimulation:
+    def __init__(self):
+        # --- 1. PHYSICAL PARAMETERS ---
+        self.T = 293.15             # 20 C
+        self.eta = 0.001            # Viscosity of water
+        self.d_p = 4.0e-6           # 4 um Diameter
+        self.r_p = self.d_p / 2.0
+
+        # Laser Parameters (Weak trap for a heavy particle)
+        self.power = 5.0e-3         # 5 mW
+        self.wavelength = 635e-9    # 635 nm
+        # Physics Constants
+        self.gamma = 6 * np.pi * self.eta * self.r_p
+        self.D = (k_B * self.T) / self.gamma
+
+        # Stiffness (approximate for 5mW)
+        self.stiffness = 1.5e-6  # N/m
+
+        # Escape radius - if particle goes beyond this, it escapes the trap
+        self.escape_radius = 4.0e-6  # 4 µm - beyond this the trap force is too weak
+
+        # --- 2. SIMULATION SETTINGS ---
+        # Smaller time step for better accuracy, but we run MANY steps per frame
+        self.dt = 0.0001 # 0.1 ms
+
+        # STARTING POSITION: Start at trap center
+        self.x = 0.0
+        self.y = 0.0
+
+        # Interaction state
+        self.is_dragging = False
+        self.is_escaped = False
+
+        # Force tracking
+        self.trap_force_x = 0.0
+        self.trap_force_y = 0.0
+
+    def get_trap_force(self):
+        """Calculate the trap force on the particle (in pN)"""
+        # F = -k * x (Hooke's law)
+        # Force points toward trap center (negative of displacement)
+        self.trap_force_x = -self.stiffness * self.x  # in Newtons
+        self.trap_force_y = -self.stiffness * self.y
+        # Convert to piconewtons for display
+        Fx_pN = self.trap_force_x * 1e12
+        Fy_pN = self.trap_force_y * 1e12
+        F_mag_pN = np.sqrt(Fx_pN**2 + Fy_pN**2)
+        return Fx_pN, Fy_pN, F_mag_pN
+
+    def run_burst(self, n_steps=100):
+        """
+        Runs a 'burst' of simulation steps efficiently using Numpy vectorization.
+        This makes data collection much faster.
+        """
+        # If dragging or escaped, don't run physics
+        if self.is_dragging:
+            return np.array([self.x]), np.array([self.y])
+
+        # Pre-calculate constants
+        sigma = np.sqrt(2 * self.D * self.dt)
+
+        # Generate random noise for the whole burst at once (Fast!)
+        noise_x = np.random.normal(0, sigma, n_steps)
+        noise_y = np.random.normal(0, sigma, n_steps)
+
+        x_history = np.zeros(n_steps)
+        y_history = np.zeros(n_steps)
+
+        curr_x = self.x
+        curr_y = self.y
+
+        for i in range(n_steps):
+            # Calculate distance from trap center
+            r = np.sqrt(curr_x**2 + curr_y**2)
+
+            if self.is_escaped or r > self.escape_radius:
+                # Particle has escaped - only Brownian motion, no trap force
+                self.is_escaped = True
+                curr_x = curr_x + noise_x[i]
+                curr_y = curr_y + noise_y[i]
+            else:
+                # Langevin Equation with trap force: x_new = x - (k/gamma)*x*dt + noise
+                k_gamma_dt = (self.stiffness / self.gamma) * self.dt
+                curr_x = curr_x - (curr_x * k_gamma_dt) + noise_x[i]
+                curr_y = curr_y - (curr_y * k_gamma_dt) + noise_y[i]
+
+            x_history[i] = curr_x
+            y_history[i] = curr_y
+
+        # Update current state
+        self.x = curr_x
+        self.y = curr_y
+
+        return x_history, y_history
+
+    def set_position(self, x_um, y_um):
+        """Set particle position (in microns)"""
+        self.x = x_um * 1e-6
+        self.y = y_um * 1e-6
+
+    def recapture(self):
+        """Attempt to recapture particle if it comes close to trap"""
+        r = np.sqrt(self.x**2 + self.y**2)
+        if r < self.escape_radius * 0.5:
+            self.is_escaped = False
+
+# --- VISUALIZATION SETUP ---
+
+sim = OpticalTrapSimulation()
+
+fig = plt.figure(figsize=(12, 6))
+gs = fig.add_gridspec(2, 2)
+
+# Plot 1: Top Down View
+ax_map = fig.add_subplot(gs[:, 0])
+# Set range to see the trap area and escape zone
+ax_map.set_xlim(-6.0, 6.0)
+ax_map.set_ylim(-6.0, 6.0)
+ax_map.set_aspect('equal')
+ax_map.set_title("Click & Drag Particle! (Release to see dynamics)")
+ax_map.set_xlabel("x (µm)")
+ax_map.set_ylabel("y (µm)")
+ax_map.grid(True, alpha=0.3)
+
+# Escape zone visual (dashed circle)
+escape_circle = plt.Circle((0, 0), sim.escape_radius*1e6, color='orange',
+                           fill=False, linestyle='--', lw=2, label='Escape Zone')
+ax_map.add_patch(escape_circle)
+
+# Laser Visual
+laser_circle = plt.Circle((0, 0), 0.5, color='red', alpha=0.3, label='Laser Trap (Focus)')
+ax_map.add_patch(laser_circle)
+
+# Particle Visual
+particle_circle = plt.Circle((sim.x*1e6, sim.y*1e6), sim.d_p*1e6/2,
+                              color='steelblue', alpha=0.8, label='Silica (4µm)')
+ax_map.add_patch(particle_circle)
+
+# Trail Visual
+trail_line, = ax_map.plot([], [], 'b-', lw=1, alpha=0.5)
+
+# Status text
+status_text = ax_map.text(0.02, 0.98, '', transform=ax_map.transAxes,
+                          fontsize=10, verticalalignment='top',
+                          bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+
+# Force arrow (quiver)
+force_arrow = ax_map.quiver(0, 0, 0, 0, angles='xy', scale_units='xy', scale=1,
+                            color='green', width=0.08, headwidth=2.5, headlength=2,
+                            label='Trap Force')
+
+# Force text display
+force_text = ax_map.text(0.98, 0.98, '', transform=ax_map.transAxes,
+                         fontsize=10, verticalalignment='top', horizontalalignment='right',
+                         bbox=dict(boxstyle='round', facecolor='lightgreen', alpha=0.8))
+
+ax_map.legend(loc='lower right', fontsize='small')
+
+# Plot 2: X-Position vs Time
+ax_time = fig.add_subplot(gs[0, 1])
+ax_time.set_xlim(0, 1000)
+ax_time.set_ylim(-5.0, 5.0)
+ax_time.set_title("X-Position Time Series")
+ax_time.set_ylabel("Position (µm)")
+ax_time.axhline(y=0, color='r', linestyle='--', alpha=0.5, label='Trap center')
+ax_time.axhline(y=sim.escape_radius*1e6, color='orange', linestyle='--', alpha=0.5)
+ax_time.axhline(y=-sim.escape_radius*1e6, color='orange', linestyle='--', alpha=0.5)
+time_line, = ax_time.plot([], [], 'b-', lw=1)
+
+# Plot 3: Histogram
+ax_hist = fig.add_subplot(gs[1, 1])
+ax_hist.set_title("Position Histogram")
+ax_hist.set_xlabel("x (µm)")
+ax_hist.set_xlim(-1.0, 1.0)
+
+# Buffers for data
+all_x_data = []
+all_y_data = []
+histogram_data = []
+
+# --- MOUSE INTERACTION ---
+class DragHandler:
+    def __init__(self, sim, particle, ax):
+        self.sim = sim
+        self.particle = particle
+        self.ax = ax
+        self.press = None
+
+    def on_press(self, event):
+        if event.inaxes != self.ax:
+            return
+        # Check if click is on the particle
+        x_p, y_p = self.particle.center
+        dist = np.sqrt((event.xdata - x_p)**2 + (event.ydata - y_p)**2)
+        particle_radius = self.sim.d_p * 1e6 / 2
+        if dist < particle_radius * 1.5:  # Allow some tolerance
+            self.press = True
+            self.sim.is_dragging = True
+            self.particle.set_color('red')  # Visual feedback
+
+    def on_motion(self, event):
+        if not self.press or event.inaxes != self.ax:
+            return
+        # Move particle to mouse position
+        self.sim.set_position(event.xdata, event.ydata)
+        self.particle.center = (event.xdata, event.ydata)
+
+    def on_release(self, event):
+        if self.press:
+            self.press = False
+            self.sim.is_dragging = False
+            # Check if particle escaped
+            r = np.sqrt(self.sim.x**2 + self.sim.y**2)
+            if r > self.sim.escape_radius:
+                self.sim.is_escaped = True
+                self.particle.set_color('orange')
+            else:
+                self.sim.is_escaped = False
+                self.particle.set_color('steelblue')
+
+drag_handler = DragHandler(sim, particle_circle, ax_map)
+fig.canvas.mpl_connect('button_press_event', drag_handler.on_press)
+fig.canvas.mpl_connect('motion_notify_event', drag_handler.on_motion)
+fig.canvas.mpl_connect('button_release_event', drag_handler.on_release)
+
+frame_count = [0]
+
+def animate(frame):
+    # RUN PHYSICS
+    x_burst, y_burst = sim.run_burst(n_steps=500)
+
+    # Convert to Microns
+    x_um = x_burst * 1e6
+    y_um = y_burst * 1e6
+
+    # Store for plotting
+    all_x_data.extend(x_um)
+    all_y_data.extend(y_um)
+
+    # Keep trajectory clean (last 5000 points)
+    if len(all_x_data) > 5000:
+        all_x_data[:] = all_x_data[-5000:]
+        all_y_data[:] = all_y_data[-5000:]
+
+    # Collect data for histogram (always relative to trap center, which is 0)
+    histogram_data.extend(x_um)
+    if len(histogram_data) > 10000:
+        histogram_data[:] = histogram_data[-10000:]
+
+    # UPDATE VISUALS
+
+    # 1. Move Particle
+    particle_circle.center = (sim.x * 1e6, sim.y * 1e6)
+
+    # Update particle color based on state
+    if sim.is_dragging:
+        particle_circle.set_color('red')
+    elif sim.is_escaped:
+        particle_circle.set_color('orange')
+    else:
+        particle_circle.set_color('steelblue')
+
+    # 2. Update Trail
+    trail_line.set_data(all_x_data, all_y_data)
+
+    # 3. Update Status Text and Force Display
+    r_um = np.sqrt(sim.x**2 + sim.y**2) * 1e6
+    Fx_pN, Fy_pN, F_mag_pN = sim.get_trap_force()
+
+    if sim.is_dragging:
+        status = "DRAGGING - Release to let go!"
+        # Show force arrow when dragging (scaled for visibility)
+        arrow_scale = 0.5  # µm per pN for visualization
+        force_arrow.set_offsets([[sim.x * 1e6, sim.y * 1e6]])
+        force_arrow.set_UVC(Fx_pN * arrow_scale, Fy_pN * arrow_scale)
+        force_text.set_text(f"Trap Force:\nFx = {Fx_pN:.2f} pN\nFy = {Fy_pN:.2f} pN\n|F| = {F_mag_pN:.2f} pN")
+    elif sim.is_escaped:
+        status = f"ESCAPED! (r={r_um:.1f}µm)\nDrag back to recapture"
+        # No trap force when escaped
+        force_arrow.set_UVC(0, 0)
+        force_text.set_text("Trap Force:\n(escaped)")
+        # Check for recapture
+        sim.recapture()
+    else:
+        status = f"TRAPPED (r={r_um:.2f}µm)\nClick particle to drag"
+        # Show current force even when trapped
+        arrow_scale = 0.5
+        force_arrow.set_offsets([[sim.x * 1e6, sim.y * 1e6]])
+        force_arrow.set_UVC(Fx_pN * arrow_scale, Fy_pN * arrow_scale)
+        force_text.set_text(f"Trap Force:\nFx = {Fx_pN:.2f} pN\nFy = {Fy_pN:.2f} pN\n|F| = {F_mag_pN:.2f} pN")
+    status_text.set_text(status)
+
+    # 4. Update Time Plot (Scrolling)
+    display_data = all_x_data[-1000:]
+    time_line.set_data(range(len(display_data)), display_data)
+    ax_time.set_xlim(0, max(len(display_data), 100))
+
+    # 5. Update Histogram (Every 5 frames)
+    if frame_count[0] % 5 == 0 and len(histogram_data) > 100:
+        ax_hist.cla()
+        ax_hist.set_title(f"X-Position Histogram (N={len(histogram_data)})")
+        ax_hist.set_xlabel("x (µm)")
+
+        # Determine x-range based on data
+        data_std = np.std(histogram_data)
+        xlim = max(1.0, min(5.0, 4 * data_std))
+        ax_hist.set_xlim(-xlim, xlim)
+
+        # Plot histogram
+        ax_hist.hist(histogram_data, bins=50, density=True, color='green', alpha=0.6)
+
+        # Plot Boltzmann theory (only valid for trapped particle)
+        if not sim.is_escaped:
+            sigma_th = np.sqrt(k_B * sim.T / sim.stiffness) * 1e6
+            x_th = np.linspace(-xlim, xlim, 100)
+            y_th = (1/(sigma_th * np.sqrt(2*np.pi))) * np.exp(-0.5 * (x_th/sigma_th)**2)
+            ax_hist.plot(x_th, y_th, 'k--', lw=2, label='Boltzmann Theory')
+            ax_hist.legend(loc='upper right', fontsize='small')
+
+    frame_count[0] += 1
+    fig.canvas.draw()
+
+print("=" * 50)
+print("INTERACTIVE OPTICAL TWEEZERS SIMULATION")
+print("=" * 50)
+print("• Click on the particle (blue circle) to grab it")
+print("• Drag it around and release")
+print("• If released inside orange circle → bounces back to center")
+print("• If released outside orange circle → ESCAPES the trap!")
+print("• Drag escaped particle back to center to recapture")
+print("=" * 50)
+
+# Hide loading message
+document.getElementById("loading").style.display = "none"
+
+# Display the figure using matplotlib's show() which works with the wasm backend
+plt.tight_layout()
+
+# The animation will run automatically with the wasm backend
+# We need to manually trigger the animation updates
+async def run_animation():
+    frame = 0
+    while True:
+        animate(frame)
+        frame += 1
+        await asyncio.sleep(0.02)  # ~50 FPS
+
+# Start the animation loop
+asyncio.create_task(run_animation())
+
+# Show the plot (this works with the wasm backend)
+plt.show()
+    </script>
+</body>
+</html>
