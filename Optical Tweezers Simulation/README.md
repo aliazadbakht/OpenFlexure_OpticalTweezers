@@ -126,7 +126,7 @@ This simulation demonstrates:
 
 ## License
 
-This project is released under the MIT License. See LICENSE for details.
+This simulation is part of the OpenFlexure Optical Tweezers project and is licensed under the CERN Open Hardware Licence Version 2 - Strongly Reciprocal (CERN-OHL-S v2).
 
 ## Author
 

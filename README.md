@@ -124,4 +124,6 @@ Special thanks to **[Mojtaba Nosratloo](https://www.linkedin.com/in/mojtaba-nosr
 
 ## License
 
-MIT License
+This project is licensed under the CERN Open Hardware Licence Version 2 - Strongly Reciprocal (CERN-OHL-S v2). See the [LICENSE](LICENSE) file for details.
+
+This license is used because this project incorporates and builds upon OpenFlexure designs and components.
