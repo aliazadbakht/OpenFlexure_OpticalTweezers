@@ -2,6 +2,12 @@
 
 An extension for the [OpenFlexure Microscope](https://openflexure.org/) that adds optical tweezers functionality. The OpenFlexure Project provides open-source, 3D-printed microscopes with precise mechanical positioning - this project extends that capability with laser-based optical trapping.
 
+## 🎥 Demo Video
+
+[![Watch on YouTube](https://img.youtube.com/vi/GGlHxX-9Ro8/0.jpg)](https://youtu.be/GGlHxX-9Ro8)
+
+Full assembly walkthrough covering the basics, required parts, and what you need to get started. Click the thumbnail to watch on YouTube.
+
 ## 🎮 Try the Interactive Simulation
 
 **[Launch Web Simulation →](https://aliazadbakht.github.io/OpenFlexure_OpticalTweezers/)**
