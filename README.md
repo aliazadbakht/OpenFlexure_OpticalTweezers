@@ -16,6 +16,9 @@ Experience optical tweezers physics directly in your browser! Click and drag par
 
 ![Optical Tweezers Simulation](https://img.shields.io/badge/Try%20It-Interactive%20Demo-blue?style=for-the-badge)
 
+### ✨ Tractor-Beam Canvas Demo (Embeddable)
+This repo also includes a lightweight, pure-HTML/JS optical tweezers animation that runs in any browser and can be embedded in your own website. You can copy the canvas section and script from the main page and drop it into your site to simulate a trapping effect without any dependencies.
+
 ## What's Included
 
 ### 📐 CAD Files

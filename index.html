@@ -129,6 +129,43 @@
         .footer a:hover {
             text-decoration: underline;
         }
+
+        .tractor-section {
+            margin-top: 40px;
+            padding: 20px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #0f172a, #111827);
+            box-shadow: inset 0 0 0 1px rgba(0, 255, 136, 0.2), 0 10px 25px rgba(0,0,0,0.25);
+        }
+
+        .tractor-section h2 {
+            color: #00ff88;
+            text-align: center;
+            margin: 0 0 10px;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .tractor-section p {
+            color: rgba(0, 255, 136, 0.85);
+            text-align: center;
+            margin: 0 0 18px;
+            font-size: 0.95em;
+        }
+
+        .tractor-canvas-wrap {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #tractor-canvas {
+            border: 2px solid #00ff88;
+            background: radial-gradient(ellipse at center, rgba(0,20,10,0.9), rgba(0,0,0,0.95));
+            box-shadow: 0 0 20px rgba(0,255,136,0.3);
+            cursor: crosshair;
+            max-width: 100%;
+            height: auto;
+        }
     </style>
 </head>
 <body>
@@ -160,11 +197,169 @@
 
         <div id="plot-area"></div>
 
+        <section class="tractor-section" aria-label="Optical tweezers tractor beam demo">
+            <h2>✨ Optical Tweezers: Tractor Beam Effect</h2>
+            <p>Move your cursor to control the laser focus. Watch particles get trapped and pulled toward the light.</p>
+            <div class="tractor-canvas-wrap">
+                <canvas id="tractor-canvas" width="800" height="600"></canvas>
+            </div>
+        </section>
+
         <div class="footer">
             <p>Simulates a 4µm silica bead in a 5mW optical trap at 635nm wavelength</p>
             <p>Built with PyScript | <a href="https://github.com/aliazadbakht/OpenFlexureOT" target="_blank">View on GitHub</a></p>
         </div>
     </div>
+
+    <script>
+        const tractorCanvas = document.getElementById('tractor-canvas');
+        const tractorCtx = tractorCanvas.getContext('2d');
+
+        let tractorMouseX = tractorCanvas.width / 2;
+        let tractorMouseY = tractorCanvas.height / 2;
+
+        const tractorParticles = [];
+
+        class TractorParticle {
+            constructor(x, y, radius = 3 + Math.random() * 4) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.radius = radius;
+                this.mass = radius * radius;
+                this.color = `hsl(${140 + Math.random() * 40}, 100%, ${50 + Math.random() * 20}%)`;
+                this.trapped = false;
+                this.trappedTime = 0;
+            }
+
+            update() {
+                const dx = tractorMouseX - this.x;
+                const dy = tractorMouseY - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                const trapRadius = 150;
+                if (distance < trapRadius) {
+                    const force = (1 - distance / trapRadius) * 0.3;
+                    const angle = Math.atan2(dy, dx);
+
+                    this.vx += Math.cos(angle) * force;
+                    this.vy += Math.sin(angle) * force;
+
+                    if (distance < 30) {
+                        this.trapped = true;
+                        this.trappedTime++;
+                    }
+                } else {
+                    this.trapped = false;
+                }
+
+                this.vx *= 0.95;
+                this.vy *= 0.95;
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x - this.radius < 0 || this.x + this.radius > tractorCanvas.width) {
+                    this.vx *= -0.8;
+                    this.x = Math.max(this.radius, Math.min(tractorCanvas.width - this.radius, this.x));
+                }
+                if (this.y - this.radius < 0 || this.y + this.radius > tractorCanvas.height) {
+                    this.vy *= -0.8;
+                    this.y = Math.max(this.radius, Math.min(tractorCanvas.height - this.radius, this.y));
+                }
+            }
+
+            draw() {
+                tractorCtx.beginPath();
+                tractorCtx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+
+                if (this.trapped) {
+                    const glow = tractorCtx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius * 3);
+                    glow.addColorStop(0, 'rgba(0,255,136,0.3)');
+                    glow.addColorStop(1, 'rgba(0,255,136,0)');
+                    tractorCtx.fillStyle = glow;
+                    tractorCtx.fill();
+                }
+
+                tractorCtx.fillStyle = this.color;
+                tractorCtx.fill();
+
+                tractorCtx.strokeStyle = 'rgba(0,255,136,0.5)';
+                tractorCtx.lineWidth = 1;
+                tractorCtx.stroke();
+            }
+        }
+
+        function initTractorParticles() {
+            tractorParticles.length = 0;
+            for (let i = 0; i < 40; i++) {
+                tractorParticles.push(new TractorParticle(
+                    Math.random() * tractorCanvas.width,
+                    Math.random() * tractorCanvas.height
+                ));
+            }
+        }
+
+        function drawTractorLaser() {
+            const gradient1 = tractorCtx.createRadialGradient(tractorMouseX, tractorMouseY, 0, tractorMouseX, tractorMouseY, 200);
+            gradient1.addColorStop(0, 'rgba(200, 100, 255, 0.15)');
+            gradient1.addColorStop(0.5, 'rgba(100, 50, 200, 0.05)');
+            gradient1.addColorStop(1, 'rgba(100, 50, 200, 0)');
+            tractorCtx.fillStyle = gradient1;
+            tractorCtx.fillRect(0, 0, tractorCanvas.width, tractorCanvas.height);
+
+            const gradient2 = tractorCtx.createRadialGradient(tractorMouseX, tractorMouseY, 0, tractorMouseX, tractorMouseY, 80);
+            gradient2.addColorStop(0, 'rgba(100, 255, 200, 0.8)');
+            gradient2.addColorStop(0.3, 'rgba(0, 200, 150, 0.5)');
+            gradient2.addColorStop(1, 'rgba(0, 200, 150, 0)');
+            tractorCtx.fillStyle = gradient2;
+            tractorCtx.beginPath();
+            tractorCtx.arc(tractorMouseX, tractorMouseY, 80, 0, Math.PI * 2);
+            tractorCtx.fill();
+
+            tractorCtx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            tractorCtx.beginPath();
+            tractorCtx.arc(tractorMouseX, tractorMouseY, 8, 0, Math.PI * 2);
+            tractorCtx.fill();
+
+            tractorCtx.strokeStyle = 'rgba(0, 255, 136, 0.2)';
+            tractorCtx.lineWidth = 2;
+            tractorCtx.setLineDash([5, 5]);
+            tractorCtx.beginPath();
+            tractorCtx.arc(tractorMouseX, tractorMouseY, 150, 0, Math.PI * 2);
+            tractorCtx.stroke();
+            tractorCtx.setLineDash([]);
+        }
+
+        function animateTractor() {
+            tractorCtx.fillStyle = 'rgba(0, 5, 15, 0.1)';
+            tractorCtx.fillRect(0, 0, tractorCanvas.width, tractorCanvas.height);
+
+            drawTractorLaser();
+
+            tractorParticles.forEach((particle) => {
+                particle.update();
+                particle.draw();
+            });
+
+            requestAnimationFrame(animateTractor);
+        }
+
+        tractorCanvas.addEventListener('mousemove', (e) => {
+            const rect = tractorCanvas.getBoundingClientRect();
+            tractorMouseX = e.clientX - rect.left;
+            tractorMouseY = e.clientY - rect.top;
+        });
+
+        tractorCanvas.addEventListener('mouseleave', () => {
+            tractorMouseX = tractorCanvas.width / 2;
+            tractorMouseY = tractorCanvas.height / 2;
+        });
+
+        initTractorParticles();
+        animateTractor();
+    </script>
 
     <script type="py" config='{"packages": ["numpy", "matplotlib"]}'>
 import numpy as np
