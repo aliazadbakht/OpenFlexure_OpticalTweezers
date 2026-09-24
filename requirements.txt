@@ -1,4 +1,7 @@
-numpy==1.24.4
-scipy==1.10.1
-matplotlib==3.7.2
-pillow==9.5.0
+# OpenFlexure Optical Tweezers — Python Dependencies
+# Install with: pip install -r requirements.txt
+
+numpy>=1.24
+scipy>=1.10
+matplotlib>=3.7
+pillow>=9.5

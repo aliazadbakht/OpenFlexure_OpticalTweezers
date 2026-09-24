@@ -1,138 +1,241 @@
 # OpenFlexure Optical Tweezers
 
-An extension for the [OpenFlexure Microscope](https://openflexure.org/) that adds optical tweezers functionality. The OpenFlexure Project provides open-source, 3D-printed microscopes with precise mechanical positioning - this project extends that capability with laser-based optical trapping.
+An extension for the [OpenFlexure Microscope](https://openflexure.org/) that adds optical tweezers functionality. The OpenFlexure Project provides open-source, 3D-printed microscopes with precise mechanical positioning — this project extends that capability with laser-based optical trapping.
 
-## 🎥 Demo Video
+## Demo Video
 
 [![Watch on YouTube](https://img.youtube.com/vi/GGlHxX-9Ro8/0.jpg)](https://youtu.be/GGlHxX-9Ro8)
 
 Full assembly walkthrough covering the basics, required parts, and what you need to get started. Click the thumbnail to watch on YouTube.
 
-## 🎮 Try the Interactive Simulation
+## Try the Interactive Simulation
 
 **[Launch Web Simulation →](https://aliazadbakht.github.io/OpenFlexure_OpticalTweezers/)**
 
-Experience optical tweezers physics directly in your browser! Click and drag particles, watch them escape the trap, and observe real-time Brownian motion. No installation required - works on any device.
+Experience optical tweezers physics directly in your browser! Click and drag particles, watch them escape the trap, and observe real-time Brownian motion. No installation required — works on any device.
 
-![Optical Tweezers Simulation](https://img.shields.io/badge/Try%20It-Interactive%20Demo-blue?style=for-the-badge)
+---
 
-### ✨ Tractor-Beam Canvas Demo (Embeddable)
-This repo also includes a lightweight, pure-HTML/JS optical tweezers animation that runs in any browser and can be embedded in your own website. You can copy the canvas section and script from the main page and drop it into your site to simulate a trapping effect without any dependencies.
+## Table of Contents
+
+- [Project Structure](#project-structure)
+- [What's Included](#whats-included)
+- [Installation](#installation)
+- [Usage Guide](#usage-guide)
+  - [Optical Tweezers Simulation](#1-optical-tweezers-simulation)
+  - [Microrheology Simulation](#2-microrheology-simulation)
+- [Building the Hardware](#building-the-hardware)
+- [Bill of Materials](#bill-of-materials)
+- [Acknowledgments](#acknowledgments)
+- [License](#license)
+
+---
+
+## Project Structure
+
+```
+OpenFlexureOT/
+├── README.md                          # This file
+├── BOM.md                             # Bill of materials
+├── LICENSE                            # CERN-OHL-S v2
+├── index.html                         # GitHub Pages landing page
+├── requirements.txt                   # Python dependencies (simulation)
+│
+├── Optical Tweezers Simulation/       # Interactive physics simulation
+│   ├── opticaltweezers_simulation.py  # Desktop Python version
+│   ├── index.html                     # Web version (PyScript, runs in browser)
+│   ├── requirements.txt               # Python dependencies
+│   ├── README.md                      # Simulation-specific documentation
+│   └── DEPLOYMENT.md                  # GitHub Pages deployment guide
+│
+├── Microrheology Simulation/          # Browser-based microrheology demo
+│   ├── Microrheology simulation.html
+│   └── deploy/
+│
+├── openscad/                          # Parametric CAD files for customization
+│   ├── cube_OT.scad
+│   ├── laser_holder_OT.scad
+│   ├── rms_optics_module_ot.scad
+│   ├── cuppler_ot.scad
+│   ├── alignment_cap.scad
+│   ├── alignment_tool.scad
+│   └── libs/
+│
+├── ipt/                               # Autodesk Inventor files (.ipt, .iam)
+│
+└── stl/                               # Ready-to-print STL and 3MF files
+```
+
+---
 
 ## What's Included
 
-### 📐 CAD Files
-- **`ipt/`** - Autodesk Inventor (.ipt) and Assembly (.iam) files for modification in Fusion 360 or Inventor
-  - Coupler (`cuppler_ot.ipt`)
-  - Laser Holder Assembly (`Laser Holder 3.0 .iam`)
-  - Objective Holder (`Objective Holder.ipt`)
-  - Cube parts (`Cube .ipt`, `Part10.ipt`)
-  - Main assembly (`OpenFlexure Optical Tweezers.iam`)
+### CAD Files
+- **`ipt/`** — Autodesk Inventor source files (.ipt/.iam) for modification in Fusion 360 or Inventor
+- **`openscad/`** — Parametric OpenSCAD designs for customization (laser diameter, thread sizing, etc.)
+- **`stl/`** — Ready-to-print STL and 3MF files for 3D printing
 
-### 🖨️ Ready-to-Print Files
-- **`stl/`** - STL and 3MF files ready for 3D printing
-  - Complete assembly: `OpenFlexure Optical Tweezers.3mf`
-  - Coupler: `Cuppler.stl`
-  - Cube: `Cube.stl`
-  - Laser holders: `Laser Holder 12 mm laser.stl`, `laser Holder 6 mm laser .stl`
-  - Lens lid: `Lens Lid.stl`
-  - RMS optics module: `RMS optics module OT.stl`
+### Simulation Software
+- **Optical Tweezers Simulation** — Interactive physics simulation (web + desktop)
+- **Microrheology Simulation** — Browser-based microrheology demo
 
-### 🔧 OpenSCAD Files
-- **`openscad/`** - Parametric designs for customization
-  - `alignment_cap.scad` and `alignment_tool.scad` - Helpers for aligning optics and laser
-  - `cuppler_ot.scad` - Coupler between the cube and laser holder
-  - `laser_holder_OT.scad` - Laser mount with adjustable diameter
-  - `cube_OT.scad` - Optical cube housing
-  - `rms_optics_module_ot.scad` - RMS-threaded optics adapter
-  - Supporting library files in `openscad/libs/`
+### Tractor-Beam Canvas Demo (Embeddable)
+A lightweight, pure HTML/JS optical tweezers animation that runs in any browser. You can copy the canvas section and script from the main `index.html` and embed it into your own website — no dependencies required.
 
-### 💻 Simulation Software
-- **`Optical Tweezers Simulation/`** - Interactive physics simulation
-  - **[Web Version](https://aliazadbakht.github.io/OpenFlexure_OpticalTweezers/)** - Run directly in your browser (no installation!)
-  - Python desktop version with real-time visualization
-  - Click-and-drag interaction to test trap strength
-  - Real-time force visualization and Brownian motion
-  - Educational tool for understanding optical trap dynamics
+---
 
-## Building the Hardware
+## Installation
 
 ### Prerequisites
-1. Access to a 3D printer
-2. OpenFlexure Microscope base (see [OpenFlexure documentation](https://openflexure.org/projects/microscope/))
-3. Laser diode (typically 635nm red laser, adjustable diameter in SCAD files)
-4. RMS-threaded objective lens
 
-### Using the OpenSCAD Files
+- **Python 3.11+** (required for simulation software)
+- **Git** (to clone the repository)
 
-The OpenSCAD files require dependencies from the main OpenFlexure project:
+### Step 1: Clone the Repository
 
-1. Clone the OpenFlexure Microscope repository:
-   ```bash
-   git clone https://gitlab.com/openflexure/openflexure-microscope.git
-   ```
+```bash
+git clone https://github.com/aliazadbakht/OpenFlexureOT.git
+cd OpenFlexureOT
+```
 
-2. Install the threads library **inside this project's OpenSCAD folder**:
-  ```bash
-  cd OpenFlexureOT
-  git clone https://github.com/rcolyer/threads-scad.git openscad/threads-scad
-  ```
+### Step 2: Create a Virtual Environment (Recommended)
 
-3. Keep this project's `openscad/` folder alongside the OpenFlexure `openscad/` files (so shared includes resolve):
-  ```
-  your-workspace/
-  ├── openflexure-microscope/
-  │   └── openscad/               (OpenFlexure base files)
-  └── OpenFlexureOT/
-     └── openscad/               (This project's files + threads-scad/)
-        ├── threads-scad/
-        ├── libs/
-        └── *.scad
-  ```
+```bash
+python -m venv venv
 
-4. Open the SCAD files and customize parameters:
-   - `laser_diameter` - Match your laser diode size (default: 6mm)
-   - Thread dimensions for your specific hardware
-   - Mounting geometry
+# On macOS/Linux:
+source venv/bin/activate
 
-5. Render and export STL files from OpenSCAD
+# On Windows:
+venv\Scripts\activate
+```
 
-### Required Libraries for OpenSCAD
-- [OpenFlexure OpenSCAD files](https://gitlab.com/openflexure/openflexure-microscope/-/tree/master/openscad)
-- [threads-scad library](https://github.com/rcolyer/threads-scad) by rcolyer
+### Step 3: Install Dependencies
 
-## Running the Simulation
+```bash
+pip install -r requirements.txt
+```
 
-### Web Version (Recommended)
-Simply visit **[https://aliazadbakht.github.io/OpenFlexure_OpticalTweezers/](https://aliazadbakht.github.io/OpenFlexure_OpticalTweezers/)**
-- No installation required
+---
+
+## Usage Guide
+
+### 1. Optical Tweezers Simulation
+
+An interactive simulation of optical trap physics including Brownian motion, trap escape dynamics, and force visualization.
+
+#### Web Version (No Installation)
+
+Visit **[https://aliazadbakht.github.io/OpenFlexure_OpticalTweezers/](https://aliazadbakht.github.io/OpenFlexure_OpticalTweezers/)**
+
 - Works on any device (desktop, tablet, mobile)
-- First load takes 10-30 seconds (downloads Python runtime)
+- First load takes 10–30 seconds (downloads Python runtime)
 - Fully interactive with click-and-drag
 
-### Local Python Version
-For faster performance and offline use:
+#### Desktop Version
 
 ```bash
 cd "Optical Tweezers Simulation"
 pip install -r requirements.txt
-python opticaltweezers_simulation.py  # Desktop version with mouse interaction
+python opticaltweezers_simulation.py
 ```
 
-The simulation demonstrates optical trap physics, including:
-- **Brownian motion** - Random thermal fluctuations
-- **Trap escape dynamics** - Drag particles beyond the escape radius
-- **Force visualization** - See trap force magnitude and direction in real-time
-- **Boltzmann statistics** - Compare experimental data with theoretical predictions
+**Controls:**
+- **Click and hold** on the particle to grab it
+- **Drag** the particle around to move it
+- **Release** inside the trap zone — the particle snaps back
+- **Release** outside the escape radius — the particle escapes
+
+**What you'll see:**
+- Real-time Brownian motion of a trapped particle
+- Green arrows showing trap force (in piconewtons)
+- Position histogram with Boltzmann distribution overlay
+- Time-series plot of particle position
+
+---
+
+### 2. Microrheology Simulation
+
+Open `Microrheology Simulation/Microrheology simulation.html` in any web browser. No installation required.
+
+---
+
+## Building the Hardware
+
+### Prerequisites
+
+1. A 3D printer (PLA or PETG recommended)
+2. OpenFlexure Microscope base — see [OpenFlexure documentation](https://openflexure.org/projects/microscope/)
+3. Laser diode (typically 635 nm red, ~1 mW)
+4. High-NA objective lens (NA >= 0.8, RMS threaded)
+5. Optical components listed in [BOM.md](BOM.md)
+
+### Assembly Steps
+
+1. **Print the parts** — use the STL files from `stl/` or the combined `OpenFlexure Optical Tweezers.3mf`
+2. **Install brass heat-set inserts** into the laser holder (3x M3)
+3. **Mount the dichroic mirror** inside the optical cube
+4. **Install the lenses** (f=17–20mm doublet and f=50mm doublet)
+5. **Mount the laser** into the laser holder with adjustment screws
+6. **Attach the coupler** between the cube and laser holder
+7. **Install the objective** into the RMS optics module
+8. **Mount onto the OpenFlexure Microscope** base
+
+Watch the [assembly video](https://youtu.be/GGlHxX-9Ro8) for a detailed walkthrough.
+
+### Customizing with OpenSCAD
+
+The OpenSCAD files require dependencies from the main OpenFlexure project:
+
+```bash
+# 1. Clone the OpenFlexure Microscope repository
+git clone https://gitlab.com/openflexure/openflexure-microscope.git
+
+# 2. Install the threads library inside this project's OpenSCAD folder
+cd OpenFlexureOT
+git clone https://github.com/rcolyer/threads-scad.git openscad/threads-scad
+```
+
+Keep the folder structure like this:
+
+```
+your-workspace/
+├── openflexure-microscope/
+│   └── openscad/               # OpenFlexure base files
+└── OpenFlexureOT/
+    └── openscad/               # This project's files
+        ├── threads-scad/
+        ├── libs/
+        └── *.scad
+```
+
+Customize parameters in the SCAD files:
+- `laser_diameter` — match your laser diode size (default: 6 mm)
+- Thread dimensions for your specific hardware
+- Mounting geometry
+
+Render and export STL files from OpenSCAD.
+
+---
+
+## Bill of Materials
+
+See [BOM.md](BOM.md) for the full list of components including optical parts, fasteners, and electronics.
+
+---
 
 ## Acknowledgments
 
 This project is supported by **[Wavefront Principle B.V.](https://wfront.nl/)**, a pre-incubator dedicated to transforming innovative ideas into real-world devices.
 
+It is also supported by **[Precisometer B.V.](https://www.precisometer.com)**, a company specialized in microscopy.
+
 Special thanks to **[Mojtaba Nosratloo](https://www.linkedin.com/in/mojtaba-nosratlo-b62404a9/)** for his significant contributions to the design and development of this project.
+
+---
 
 ## License
 
-This project is licensed under the CERN Open Hardware Licence Version 2 - Strongly Reciprocal (CERN-OHL-S v2). See the [LICENSE](LICENSE) file for details.
+This project is licensed under the CERN Open Hardware Licence Version 2 — Strongly Reciprocal (CERN-OHL-S v2). See the [LICENSE](LICENSE) file for details.
 
 This license is used because this project incorporates and builds upon OpenFlexure designs and components.

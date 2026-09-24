@@ -1,0 +1,13 @@
+# Exclude interactive single particle tracking
+interactive single particle tracking/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
